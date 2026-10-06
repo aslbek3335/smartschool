@@ -1,0 +1,10 @@
+{
+  "name": "smartschool-frontend",
+  "version": "1.0.0",
+  "description": "SmartSchool Frontend Server",
+  "main": "server.cjs",
+  "scripts": {
+    "start": "node server.cjs",
+    "dev": "node server.cjs"
+  }
+}

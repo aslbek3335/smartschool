@@ -1,0 +1,13 @@
+{
+  "name": "smartschool",
+  "version": "1.0.0",
+  "description": "SmartSchool Platform",
+  "scripts": {
+    "dev": "node -e \"const { spawn } = require('child_process'); spawn('node', ['server.js'], { cwd: './backend', stdio: 'inherit', shell: true }); spawn('node', ['server.cjs'], { cwd: './frontend', stdio: 'inherit', shell: true });\"",
+    "start": "node -e \"const { spawn } = require('child_process'); spawn('node', ['server.js'], { cwd: './backend', stdio: 'inherit', shell: true }); spawn('node', ['server.cjs'], { cwd: './frontend', stdio: 'inherit', shell: true });\"",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm start",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev"
+  }
+}
