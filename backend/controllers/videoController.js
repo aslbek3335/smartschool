@@ -106,21 +106,28 @@ exports.getVideoById = async (req, res) => {
 };
 
 // ──────────────────────────────────────────
-// POST /api/videos   (teacher/admin)
-// Multer fields: video + thumbnail (ixtiyoriy)
+// POST /api/videos yoki /api/video-lessons (teacher/admin)
+// JSON body: { title, description, subject_id, video_url, duration_sec, ... }
 // ──────────────────────────────────────────
 exports.createVideo = async (req, res) => {
   try {
-    const { title, description, subject_id, duration_sec, target_class_id, class_id, grade_level } = req.body;
+    const { title, description, subject_id, video_url, duration_sec, target_class_id, class_id, grade_level, thumbnail_url } = req.body;
     if (!title || !subject_id) {
       return res.status(400).json({ success: false, message: 'Sarlavha va fan majburiy.' });
     }
-    if (!req.files?.video?.[0]) {
-      return res.status(400).json({ success: false, message: 'Video fayl yuklash shart.' });
+    if (!video_url || typeof video_url !== 'string' || !video_url.trim()) {
+      return res.status(400).json({ success: false, message: 'YouTube video havolasi (video_url) kiritilishi shart.' });
     }
 
-    const videoFile     = req.files.video[0];
-    const thumbnailFile = req.files?.thumbnail?.[0];
+    const trimmedVideoUrl = video_url.trim();
+
+    // YouTube Video ID va Thumbnail ni aniqlash
+    let finalThumbnail = thumbnail_url || null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+    const match = trimmedVideoUrl.match(regExp);
+    if (!finalThumbnail && match && match[2] && match[2].length === 11) {
+      finalThumbnail = `https://img.youtube.com/vi/${match[2]}/hqdefault.jpg`;
+    }
 
     const isPublished = req.body.is_published !== undefined ? req.body.is_published : true;
 
@@ -134,14 +141,6 @@ exports.createVideo = async (req, res) => {
       }
     }
 
-    const path = require('path');
-    const videoUrl = videoFile.path.startsWith('http') 
-      ? videoFile.path 
-      : `/uploads/${path.basename(videoFile.path)}`;
-    const thumbnailUrl = thumbnailFile 
-      ? (thumbnailFile.path.startsWith('http') ? thumbnailFile.path : `/uploads/${path.basename(thumbnailFile.path)}`) 
-      : null;
-
     const result = await pool.query(
       `INSERT INTO videos
         (title, description, subject_id, teacher_id, video_url, video_public_id,
@@ -150,16 +149,23 @@ exports.createVideo = async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
        RETURNING *`,
       [
-        title, description, subject_id, req.user.id,
-        videoUrl, videoFile.filename,
-        thumbnailUrl, thumbnailFile?.filename || null,
+        title.trim(),
+        description ? description.trim() : '',
+        subject_id,
+        req.user.id,
+        trimmedVideoUrl,
+        null,
+        finalThumbnail,
+        null,
         duration_sec || 0,
         isPublished,
-        targetClassIdVal, targetClassIdVal, gradeLevelVal
+        targetClassIdVal,
+        targetClassIdVal,
+        gradeLevelVal
       ]
     );
 
-    res.status(201).json({ success: true, message: 'Video yuklandi!', video: result.rows[0] });
+    res.status(201).json({ success: true, message: 'Videodars muvaffaqiyatli qo\'shildi!', video: result.rows[0] });
   } catch (err) {
     console.error('createVideo xato:', err);
     res.status(500).json({ success: false, message: 'Server xatosi.' });
@@ -172,22 +178,26 @@ exports.createVideo = async (req, res) => {
 exports.updateVideo = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, is_published, duration_sec, target_class_id, class_id, grade_level } = req.body;
+    const { title, description, video_url, is_published, duration_sec, target_class_id, class_id, grade_level, thumbnail_url } = req.body;
 
-    const check = await pool.query('SELECT teacher_id FROM videos WHERE id=$1', [id]);
+    const check = await pool.query('SELECT teacher_id, video_url, thumbnail_url FROM videos WHERE id=$1', [id]);
     if (!check.rows.length) return res.status(404).json({ success: false, message: 'Video topilmadi.' });
     if (req.user.role !== 'admin' && check.rows[0].teacher_id !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Ruxsat yo\'q.' });
     }
 
-    let thumbnail_url = undefined, thumbnail_public_id = undefined;
-    if (req.files?.thumbnail?.[0]) {
-      const old = await pool.query('SELECT thumbnail_public_id FROM videos WHERE id=$1', [id]);
-      if (old.rows[0]?.thumbnail_public_id) {
-        await cloudinary.uploader.destroy(old.rows[0].thumbnail_public_id);
+    if (video_url !== undefined && (typeof video_url !== 'string' || !video_url.trim())) {
+      return res.status(400).json({ success: false, message: 'video_url to\'g\'ri matn bo\'lishi shart.' });
+    }
+
+    const trimmedVideoUrl = video_url ? video_url.trim() : undefined;
+    let finalThumbnail = thumbnail_url !== undefined ? thumbnail_url : undefined;
+    if (trimmedVideoUrl && !finalThumbnail) {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+      const match = trimmedVideoUrl.match(regExp);
+      if (match && match[2] && match[2].length === 11) {
+        finalThumbnail = `https://img.youtube.com/vi/${match[2]}/hqdefault.jpg`;
       }
-      thumbnail_url       = req.files.thumbnail[0].path;
-      thumbnail_public_id = req.files.thumbnail[0].filename;
     }
 
     const targetClassIdVal = (target_class_id !== undefined || class_id !== undefined)
@@ -206,15 +216,15 @@ exports.updateVideo = async (req, res) => {
       `UPDATE videos SET
         title        = COALESCE($1, title),
         description  = COALESCE($2, description),
-        is_published = COALESCE($3, is_published),
-        duration_sec = COALESCE($4, duration_sec),
-        thumbnail_url       = COALESCE($5, thumbnail_url),
-        thumbnail_public_id = COALESCE($6, thumbnail_public_id),
-        target_class_id     = COALESCE($7, target_class_id),
-        class_id            = COALESCE($8, class_id),
-        grade_level         = COALESCE($9, grade_level)
+        video_url    = COALESCE($3, video_url),
+        is_published = COALESCE($4, is_published),
+        duration_sec = COALESCE($5, duration_sec),
+        thumbnail_url= COALESCE($6, thumbnail_url),
+        target_class_id = COALESCE($7, target_class_id),
+        class_id     = COALESCE($8, class_id),
+        grade_level  = COALESCE($9, grade_level)
        WHERE id=$10 RETURNING *`,
-      [title, description, is_published, duration_sec, thumbnail_url, thumbnail_public_id, targetClassIdVal, targetClassIdVal, gradeLevelVal, id]
+      [title, description, trimmedVideoUrl, is_published, duration_sec, finalThumbnail, targetClassIdVal, targetClassIdVal, gradeLevelVal, id]
     );
 
     res.json({ success: true, message: 'Video yangilandi!', video: result.rows[0] });

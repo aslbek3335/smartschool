@@ -21,6 +21,7 @@ app.use('/api/profile',           require('./routes/profile'));
 app.use('/api/subjects',          require('./routes/subjects'));
 app.use('/api/lessons',           require('./routes/lessons'));
 app.use('/api/videos',            require('./routes/videos'));
+app.use('/api/video-lessons',     require('./routes/videos'));
 app.use('/api/quizzes',           require('./routes/quizzes'));
 app.use('/api/tasks',             require('./routes/tasks'));
 app.use('/api/admin',             require('./routes/admin'));

@@ -68,6 +68,9 @@ CREATE TABLE IF NOT EXISTS videos (
   updated_at      TIMESTAMP DEFAULT NOW()
 );
 
+-- video_lessons alias/view
+CREATE OR REPLACE VIEW video_lessons AS SELECT * FROM videos;
+
 -- O'quvchining dars progressi
 CREATE TABLE IF NOT EXISTS lesson_progress (
   id          SERIAL PRIMARY KEY,

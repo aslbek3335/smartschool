@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node -e \"const { spawn } = require('child_process'); spawn('node', ['server.js'], { cwd: './backend', stdio: 'inherit', shell: true }); spawn('node', ['server.cjs'], { cwd: './frontend', stdio: 'inherit', shell: true });\"",
     "start": "node -e \"const { spawn } = require('child_process'); spawn('node', ['server.js'], { cwd: './backend', stdio: 'inherit', shell: true }); spawn('node', ['server.cjs'], { cwd: './frontend', stdio: 'inherit', shell: true });\"",
+    "build": "npm --prefix frontend run build",
     "start:backend": "cd backend && npm start",
     "start:frontend": "cd frontend && npm start",
     "dev:backend": "cd backend && npm run dev",

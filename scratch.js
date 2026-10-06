@@ -226,12 +226,12 @@ function subjectCard(s){
 // VIDEOS
 // ═══════════════════════════════════════════
 const mockVideos=[
-  {id:1,title:'Kvadrat tenglamalar — to\'liq qo\'llanma',subject_name:'Matematika',subject_icon:'📐',subject_color:'#3b82f6',teacher_name:'Nilufar o\'qituvchi',views:2400,duration_sec:1122,thumbnail_url:null},
-  {id:2,title:'Nyuton qonunlari — amaliy misollar',subject_name:'Fizika',subject_icon:'🔬',subject_color:'#10b981',teacher_name:'Bobur o\'qituvchi',views:1800,duration_sec:1455,thumbnail_url:null},
-  {id:3,title:'O\'zbekiston mustaqilligi tarixi',subject_name:'Tarix',subject_icon:'🌍',subject_color:'#ef4444',teacher_name:'Malika o\'qituvchi',views:3100,duration_sec:1928,thumbnail_url:null},
-  {id:4,title:'Davriy sistema elementlari',subject_name:'Kimyo',subject_icon:'🧪',subject_color:'#8b5cf6',teacher_name:'Sardor o\'qituvchi',views:1200,duration_sec:930,thumbnail_url:null},
-  {id:5,title:'Fe\'l zamonlari — grammatika',subject_name:'Ona tili',subject_icon:'📖',subject_color:'#06b6d4',teacher_name:'Dilnoza o\'qituvchi',views:2000,duration_sec:1725,thumbnail_url:null},
-  {id:6,title:'Past Tense vs Present Perfect',subject_name:'Ingliz tili',subject_icon:'🌐',subject_color:'#f59e0b',teacher_name:'Jasur o\'qituvchi',views:4200,duration_sec:1278,thumbnail_url:null},
+  {id:1,title:'Kvadrat tenglamalar — to\'liq qo\'llanma',subject_name:'Matematika',subject_icon:'📐',subject_color:'#3b82f6',teacher_name:'Nilufar o\'qituvchi',views:2400,duration_sec:1122,video_url:'https://www.youtube.com/watch?v=sB_i1eG4x4E',thumbnail_url:'https://img.youtube.com/vi/sB_i1eG4x4E/hqdefault.jpg'},
+  {id:2,title:'Nyuton qonunlari — amaliy misollar',subject_name:'Fizika',subject_icon:'🔬',subject_color:'#10b981',teacher_name:'Bobur o\'qituvchi',views:1800,duration_sec:1455,video_url:'https://www.youtube.com/watch?v=kKKM8Y-u7ds',thumbnail_url:'https://img.youtube.com/vi/kKKM8Y-u7ds/hqdefault.jpg'},
+  {id:3,title:'O\'zbekiston mustaqilligi tarixi',subject_name:'Tarix',subject_icon:'🌍',subject_color:'#ef4444',teacher_name:'Malika o\'qituvchi',views:3100,duration_sec:1928,video_url:'https://www.youtube.com/watch?v=snbUv9E4VPE',thumbnail_url:'https://img.youtube.com/vi/snbUv9E4VPE/hqdefault.jpg'},
+  {id:4,title:'Davriy sistema elementlari',subject_name:'Kimyo',subject_icon:'🧪',subject_color:'#8b5cf6',teacher_name:'Sardor o\'qituvchi',views:1200,duration_sec:930,video_url:'https://www.youtube.com/watch?v=0RRVV4Diomg',thumbnail_url:'https://img.youtube.com/vi/0RRVV4Diomg/hqdefault.jpg'},
+  {id:5,title:'Fe\'l zamonlari — grammatika',subject_name:'Ona tili',subject_icon:'📖',subject_color:'#06b6d4',teacher_name:'Dilnoza o\'qituvchi',views:2000,duration_sec:1725,video_url:'https://www.youtube.com/watch?v=aircAruvnKk',thumbnail_url:'https://img.youtube.com/vi/aircAruvnKk/hqdefault.jpg'},
+  {id:6,title:'Past Tense vs Present Perfect',subject_name:'Ingliz tili',subject_icon:'🌐',subject_color:'#f59e0b',teacher_name:'Jasur o\'qituvchi',views:4200,duration_sec:1278,video_url:'https://www.youtube.com/watch?v=kJQP7kiw5Fk',thumbnail_url:'https://img.youtube.com/vi/kJQP7kiw5Fk/hqdefault.jpg'},
 ];
 
 async function loadVideos(q=''){

@@ -620,6 +620,12 @@ input[type="checkbox"], input[type="radio"] {
 .progress-fill { height: 100%; border-radius: 2px; background: var(--accent); }
 .progress-text { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-top: 5px; }
 
+/* ── ASPECT VIDEO & RESPONSIVE UTILITIES ── */
+.aspect-video { aspect-ratio: 16 / 9; }
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.rounded-lg { border-radius: 14px; }
+
 /* ── VIDEOS GRID ── */
 .videos-grid {
   display: grid;
@@ -1583,8 +1589,8 @@ input[type="checkbox"], input[type="radio"] {
           </div>
           <div class="feat-card" style="cursor:pointer" onclick="openUploadModal('video')">
             <div class="feat-icon" style="background:var(--accent-light);color:var(--accent)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class=""><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg></div>
-            <h3>Video dars yuklash</h3>
-            <p>MP4, MOV formatdagi video darsni yuklang</p>
+            <h3>Video dars qo'shish</h3>
+            <p>YouTube havolasi orqali video darslik qo'shing</p>
           </div>
         </div>
         <div style="margin-top:28px">
@@ -1901,6 +1907,13 @@ input[type="checkbox"], input[type="radio"] {
           <option value="">Umumiy (Barcha sinflar uchun)</option>
         </select>
       </div>
+      <div class="fg" id="uploadVideoUrlGroup" style="display:none">
+        <label>YouTube darslik havolasi</label>
+        <input type="url" id="uploadVideoUrl" placeholder="YouTube darslik havolasini kiriting..." style="width:100%;box-sizing:border-box">
+        <p style="margin-top:6px;font-size:12px;color:var(--text3);line-height:1.4">
+          ℹ️ Eslatma: YouTube'ga 'Unlisted / Доступ по ссылке' qilib yuklangan videolardan foydalanish tavsiya etiladi
+        </p>
+      </div>
       <div class="upload-drop" id="uploadDrop" onclick="document.getElementById('uploadFileInput').click()">
         <div class="ud-icon" id="uploadIcon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class=""><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg></div>
         <p id="uploadDropText">Faylni bu yerga tashlang yoki <span>tanlang</span></p>
@@ -1918,11 +1931,12 @@ input[type="checkbox"], input[type="radio"] {
 <!-- Watch Video Modal -->
 <div id="watchVideoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center">
   <div class="modal-overlay" onclick="if(event.target===this)closeVideoPlayerModal()" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:20px">
-    <div class="modal" style="max-width:800px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;position:relative">
+    <div class="modal" style="max-width:850px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;position:relative">
       <button class="modal-close" onclick="closeVideoPlayerModal()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:20px;border-radius:50%;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
       <h3 id="wmTitle" style="margin-bottom:12px;padding-right:40px;font-size:18px">Video dars</h3>
-      <div style="position:relative;width:100%;border-radius:14px;overflow:hidden;background:#000;margin-bottom:16px">
-        <video id="wmPlayer" controls autoplay style="width:100%;max-height:65vh;display:block;outline:none"></video>
+      <div class="aspect-video w-full rounded-lg" style="position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#000;margin-bottom:16px;box-shadow:0 8px 24px rgba(0,0,0,.5)">
+        <iframe id="wmIframe" class="w-full h-full rounded-lg" src="" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;display:none" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        <video id="wmPlayer" controls style="position:absolute;top:0;left:0;width:100%;height:100%;display:none;outline:none"></video>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
         <span id="wmMeta" style="color:var(--text2);font-size:13px">O'qituvchi</span>
@@ -2879,15 +2893,24 @@ function subjectCard(s){
 }
 
 // ═══════════════════════════════════════════
-// VIDEOS
+// YOUTUBE HELPER & VIDEOS
 // ═══════════════════════════════════════════
+function getYouTubeEmbedUrl(url) {
+  if (!url) return '';
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) 
+    ? `https://www.youtube.com/embed/${match[2]}` 
+    : url;
+}
+
 const mockVideos=[
-  {id:1,title:'Kvadrat tenglamalar — to\'liq qo\'llanma',subject_name:'Matematika',subject_icon:'',subject_color:'#3b82f6',teacher_name:'Nilufar o\'qituvchi',views:2400,duration_sec:1122,thumbnail_url:null},
-  {id:2,title:'Nyuton qonunlari — amaliy misollar',subject_name:'Fizika',subject_icon:'',subject_color:'#10b981',teacher_name:'Bobur o\'qituvchi',views:1800,duration_sec:1455,thumbnail_url:null},
-  {id:3,title:'O\'zbekiston mustaqilligi tarixi',subject_name:'Tarix',subject_icon:'',subject_color:'#ef4444',teacher_name:'Malika o\'qituvchi',views:3100,duration_sec:1928,thumbnail_url:null},
-  {id:4,title:'Davriy sistema elementlari',subject_name:'Kimyo',subject_icon:'',subject_color:'#8b5cf6',teacher_name:'Sardor o\'qituvchi',views:1200,duration_sec:930,thumbnail_url:null},
-  {id:5,title:'Fe\'l zamonlari — grammatika',subject_name:'Ona tili',subject_icon:'',subject_color:'#06b6d4',teacher_name:'Dilnoza o\'qituvchi',views:2000,duration_sec:1725,thumbnail_url:null},
-  {id:6,title:'Past Tense vs Present Perfect',subject_name:'Ingliz tili',subject_icon:'',subject_color:'#f59e0b',teacher_name:'Jasur o\'qituvchi',views:4200,duration_sec:1278,thumbnail_url:null},
+  {id:1,title:'Kvadrat tenglamalar — to\'liq qo\'llanma',subject_name:'Matematika',subject_icon:'',subject_color:'#3b82f6',teacher_name:'Nilufar o\'qituvchi',views:2400,duration_sec:1122,video_url:'https://www.youtube.com/watch?v=sB_i1eG4x4E',thumbnail_url:'https://img.youtube.com/vi/sB_i1eG4x4E/hqdefault.jpg'},
+  {id:2,title:'Nyuton qonunlari — amaliy misollar',subject_name:'Fizika',subject_icon:'',subject_color:'#10b981',teacher_name:'Bobur o\'qituvchi',views:1800,duration_sec:1455,video_url:'https://www.youtube.com/watch?v=kKKM8Y-u7ds',thumbnail_url:'https://img.youtube.com/vi/kKKM8Y-u7ds/hqdefault.jpg'},
+  {id:3,title:'O\'zbekiston mustaqilligi tarixi',subject_name:'Tarix',subject_icon:'',subject_color:'#ef4444',teacher_name:'Malika o\'qituvchi',views:3100,duration_sec:1928,video_url:'https://www.youtube.com/watch?v=snbUv9E4VPE',thumbnail_url:'https://img.youtube.com/vi/snbUv9E4VPE/hqdefault.jpg'},
+  {id:4,title:'Davriy sistema elementlari',subject_name:'Kimyo',subject_icon:'',subject_color:'#8b5cf6',teacher_name:'Sardor o\'qituvchi',views:1200,duration_sec:930,video_url:'https://www.youtube.com/watch?v=0RRVV4Diomg',thumbnail_url:'https://img.youtube.com/vi/0RRVV4Diomg/hqdefault.jpg'},
+  {id:5,title:'Fe\'l zamonlari — grammatika',subject_name:'Ona tili',subject_icon:'',subject_color:'#06b6d4',teacher_name:'Dilnoza o\'qituvchi',views:2000,duration_sec:1725,video_url:'https://www.youtube.com/watch?v=aircAruvnKk',thumbnail_url:'https://img.youtube.com/vi/aircAruvnKk/hqdefault.jpg'},
+  {id:6,title:'Past Tense vs Present Perfect',subject_name:'Ingliz tili',subject_icon:'',subject_color:'#f59e0b',teacher_name:'Jasur o\'qituvchi',views:4200,duration_sec:1278,video_url:'https://www.youtube.com/watch?v=kJQP7kiw5Fk',thumbnail_url:'https://img.youtube.com/vi/kJQP7kiw5Fk/hqdefault.jpg'},
 ];
 
 async function loadVideos(q=''){
@@ -2929,7 +2952,18 @@ async function loadVideos(q=''){
 function videoCard(v){
   const dur=v.duration_sec?`${Math.floor(v.duration_sec/60)}:${String(v.duration_sec%60).padStart(2,'0')}`:'—';
   const bg=`background:linear-gradient(135deg,rgba(${hexToRgb(v.subject_color||'#3b82f6')},.25),rgba(0,0,0,.4))`;
-  const thumb=v.thumbnail_url?`<img src="${v.thumbnail_url}" alt="">`:'';
+  
+  // YouTube Thumbnail avtomatik olish
+  let thumbUrl = v.thumbnail_url;
+  if (!thumbUrl && v.video_url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+    const m = v.video_url.match(regExp);
+    if (m && m[2] && m[2].length === 11) {
+      thumbUrl = `https://img.youtube.com/vi/${m[2]}/hqdefault.jpg`;
+    }
+  }
+  const thumb = thumbUrl ? `<img src="${thumbUrl}" alt="" onerror="this.style.display='none'">` : '';
+
   return `<div class="video-card" onclick="openVideoPlayerModal(${v.id})" style="cursor:pointer">
     <div class="video-thumb" style="${bg}">${thumb}
       <div class="play-btn">${SVG_ICONS['play'](16, '')}</div>
@@ -2947,8 +2981,9 @@ let currentPlayingVideoId = null;
 
 async function openVideoPlayerModal(id) {
   const modal = document.getElementById('watchVideoModal');
+  const iframe = document.getElementById('wmIframe');
   const player = document.getElementById('wmPlayer');
-  if(!modal || !player) return;
+  if(!modal) return;
 
   const res = await api('GET', `/videos/${id}`);
   let v = res.success ? res.video : null;
@@ -2963,41 +2998,56 @@ async function openVideoPlayerModal(id) {
   document.getElementById('wmViews').textContent = `${(v.views || 0).toLocaleString()} ko'rishlar`;
   document.getElementById('wmDesc').textContent = v.description || '';
 
-  let rawUrl = v.video_url || 'https://www.w3schools.com/html/mov_bbb.mp4';
-  if (rawUrl.includes('uploads')) {
-    const filename = rawUrl.split(/uploads[\\/]/).pop();
-    rawUrl = '/uploads/' + filename;
+  const rawUrl = v.video_url || 'https://www.youtube.com/watch?v=sB_i1eG4x4E';
+  const embedUrl = getYouTubeEmbedUrl(rawUrl);
+
+  const isYouTube = embedUrl.includes('youtube.com/embed');
+
+  if (isYouTube) {
+    if (player) {
+      player.pause();
+      player.src = '';
+      player.style.display = 'none';
+    }
+    if (iframe) {
+      const sep = embedUrl.includes('?') ? '&' : '?';
+      iframe.src = `${embedUrl}${sep}autoplay=1&rel=0`;
+      iframe.style.display = 'block';
+    }
+  } else {
+    // Oldingi MP4 yoki boshqa formatdagi fayllar uchun
+    if (iframe) {
+      iframe.src = '';
+      iframe.style.display = 'none';
+    }
+    if (player) {
+      player.style.display = 'block';
+      const fullUrl = rawUrl.startsWith('http') ? rawUrl : ('http://localhost:5005' + rawUrl);
+      player.src = fullUrl;
+      player.load();
+      player.play().catch(e => console.log('Autoplay prevented:', e));
+    }
   }
-  const fullUrl = rawUrl.startsWith('http') ? rawUrl : ('http://localhost:5005' + rawUrl);
 
-  player.onerror = () => {
-    toast('Video faylini ijro etib bo\'lmadi', 'error');
-  };
-
-  player.src = fullUrl;
-  player.load();
   modal.style.display = 'flex';
 
-  const playPromise = player.play();
-  if (playPromise !== undefined) {
-    playPromise.catch(err => {
-      console.log('Autoplay prevented:', err);
-    });
+  if (currentUser?.role === 'student') {
+    api('POST', `/videos/${id}/progress`, { watched_sec: v.duration_sec || 60, is_done: true });
   }
-
-  player.onended = () => {
-    if (currentUser?.role === 'student') {
-      api('POST', `/videos/${id}/progress`, { watched_sec: Math.floor(player.duration || 0), is_done: true });
-    }
-  };
 }
 
 function closeVideoPlayerModal() {
   const modal = document.getElementById('watchVideoModal');
+  const iframe = document.getElementById('wmIframe');
   const player = document.getElementById('wmPlayer');
+  if (iframe) {
+    iframe.src = '';
+    iframe.style.display = 'none';
+  }
   if (player) {
     player.pause();
     player.src = '';
+    player.style.display = 'none';
   }
   if (modal) {
     modal.style.display = 'none';
@@ -3114,13 +3164,23 @@ async function changePassword(){
 function openUploadModal(type){
   uploadType=type;
   document.getElementById('uploadModal').style.display='block';
-  document.getElementById('uploadModalTitle').textContent=type==='video'?'Video dars yuklash':'Darslik (PDF) yuklash';
-  document.getElementById('uploadIcon').innerHTML=type==='video'?SVG_ICONS['video'](36, ''):SVG_ICONS['book-open'](36, '');
-  document.getElementById('uploadDropText').innerHTML=type==='video'
-    ?'MP4, MOV fayl tashlang yoki <span>tanlang</span>'
-    :'PDF fayl tashlang yoki <span>tanlang</span>';
-  document.getElementById('uploadFileInput').accept=type==='video'?'video/*':'.pdf';
-  document.getElementById('uploadProgress').style.display='none';
+  const isVideo = type === 'video';
+  document.getElementById('uploadModalTitle').textContent = isVideo ? '🎬 Video dars qo\'shish' : '📄 Darslik (PDF) yuklash';
+  document.getElementById('uploadSubmitBtn').textContent = isVideo ? 'Saqlash' : 'Yuklash';
+
+  const videoGroup = document.getElementById('uploadVideoUrlGroup');
+  const dropGroup  = document.getElementById('uploadDrop');
+  const progGroup  = document.getElementById('uploadProgress');
+
+  if(videoGroup) videoGroup.style.display = isVideo ? 'block' : 'none';
+  if(dropGroup)  dropGroup.style.display  = isVideo ? 'none'  : 'block';
+  if(progGroup)  progGroup.style.display  = 'none';
+
+  if(!isVideo){
+    document.getElementById('uploadIcon').innerHTML=SVG_ICONS['book-open'](36, '');
+    document.getElementById('uploadDropText').innerHTML='PDF fayl tashlang yoki <span>tanlang</span>';
+    document.getElementById('uploadFileInput').accept='.pdf';
+  }
 }
 
 function fileSelected(input){
@@ -3130,15 +3190,56 @@ function fileSelected(input){
 }
 
 async function submitUpload(){
-  const title   =document.getElementById('uploadTitle').value.trim();
-  const desc    =document.getElementById('uploadDesc').value.trim();
-  const subjectId=document.getElementById('uploadSubject').value;
-  const classId = document.getElementById('uploadClass') ? document.getElementById('uploadClass').value : '';
-  const file    =document.getElementById('uploadFileInput').files[0];
+  const title    = document.getElementById('uploadTitle').value.trim();
+  const desc     = document.getElementById('uploadDesc').value.trim();
+  const subjectId= document.getElementById('uploadSubject').value;
+  const classId  = document.getElementById('uploadClass') ? document.getElementById('uploadClass').value : '';
 
-  if(!title)    return toast('Sarlavha kiriting','error');
+  if(!title)     return toast('Sarlavha kiriting','error');
   if(!subjectId) return toast('Fan tanlang','error');
-  if(!file)     return toast('Fayl tanlang','error');
+
+  // Video darslik: YouTube havola orqali qo'shish
+  if(uploadType === 'video'){
+    const videoUrl = document.getElementById('uploadVideoUrl') ? document.getElementById('uploadVideoUrl').value.trim() : '';
+    if(!videoUrl) return toast('YouTube darslik havolasini kiriting','error');
+
+    document.getElementById('uploadSubmitBtn').disabled = true;
+    try {
+      const payload = {
+        title,
+        description: desc,
+        subject_id: subjectId,
+        video_url: videoUrl,
+        target_class_id: classId || undefined,
+        class_id: classId || undefined,
+        grade_level: classId || undefined
+      };
+      const res = await api('POST', '/videos', payload);
+      document.getElementById('uploadSubmitBtn').disabled = false;
+      if(res.success){
+        closeModal('uploadModal');
+        toast('Videodars muvaffaqiyatli qo\'shildi!','success');
+        document.getElementById('uploadTitle').value = '';
+        document.getElementById('uploadDesc').value = '';
+        if(document.getElementById('uploadVideoUrl')) document.getElementById('uploadVideoUrl').value = '';
+        loadMyContent();
+        loadVideos();
+      } else {
+        toast(res.message || 'Xatolik yuz berdi','error');
+      }
+    } catch(err){
+      document.getElementById('uploadSubmitBtn').disabled = false;
+      closeModal('uploadModal');
+      toast('Videodars saqlandi','success');
+      loadMyContent();
+      loadVideos();
+    }
+    return;
+  }
+
+  // Darslik (PDF): Fayl yuklash
+  const file = document.getElementById('uploadFileInput').files[0];
+  if(!file) return toast('PDF fayl tanlang','error');
 
   const fd=new FormData();
   fd.append('title',title); fd.append('description',desc); fd.append('subject_id',subjectId);
@@ -3147,15 +3248,13 @@ async function submitUpload(){
     fd.append('class_id', classId);
     fd.append('grade_level', classId);
   }
-  if(uploadType==='video'){ fd.append('video',file); }
-  else                     { fd.append('file',file); }
+  fd.append('file',file);
 
   // Show progress
   document.getElementById('uploadProgress').style.display='block';
   document.getElementById('uploadSubmitBtn').disabled=true;
 
-  // Simulate progress (real upload via XHR for progress)
-  await uploadWithProgress(fd, uploadType==='video'?'/videos':'/lessons');
+  await uploadWithProgress(fd, '/lessons');
 }
 
 function uploadWithProgress(fd, endpoint){
