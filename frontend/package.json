@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node server.cjs",
     "dev": "node server.cjs",
-    "build": "node -e \"console.log('Frontend check passed.')\""
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^6.4.4"
   }
 }

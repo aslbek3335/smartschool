@@ -1,6 +1,11 @@
-﻿# Dependencies
+# Dependencies
 node_modules/
 */node_modules/
+
+# Production build output
+dist/
+*/dist/
+.vite/
 
 # Environment variables (security)
 .env
