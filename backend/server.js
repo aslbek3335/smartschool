@@ -5,11 +5,44 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 
-// ── Middleware ──
+// ── CORS sozlamalari ──
+const ALLOWED_ORIGINS = [
+  // Production domen
+  'https://maktabtizimi.uz',
+  'https://www.maktabtizimi.uz',
+  // Vercel preview domenlar uchun dinamik ruxsat
+  /^https:\/\/.*\.vercel\.app$/,
+  // Local development
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5005',
+];
+
+// FRONTEND_URL env o'zgaruvchisi orqali qo'shimcha domen qo'shish imkoniyati
+if (process.env.FRONTEND_URL && !ALLOWED_ORIGINS.includes(process.env.FRONTEND_URL)) {
+  ALLOWED_ORIGINS.unshift(process.env.FRONTEND_URL);
+}
+
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: (origin, callback) => {
+    // Server-to-server yoki curl so'rovlari (origin yo'q) — ruxsat
+    if (!origin) return callback(null, true);
+
+    const isAllowed = ALLOWED_ORIGINS.some((allowed) =>
+      allowed instanceof RegExp ? allowed.test(origin) : allowed === origin
+    );
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS bloklandi: ${origin}`);
+      callback(new Error(`CORS: ${origin} domeniga ruxsat berilmagan.`));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true,          // Cookie / Authorization header uchun
+  optionsSuccessStatus: 200,  // Ba'zi eski brauzerlar 204 ni qabul qilmaydi
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

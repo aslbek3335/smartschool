@@ -1,11 +1,20 @@
 import axios from 'axios';
 
+// Production: Vercel dashboard → Settings → Environment Variables da
+// VITE_API_URL = https://smartschool-9qyh.onrender.com/api  deb o'rnat
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://smartschool-9qyh.onrender.com/api'; // Render.com production fallback
+
 const api = axios.create({
-  baseURL: 'http://localhost:5005/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Cross-origin cookie/auth uchun
 });
+
 
 api.interceptors.request.use(
   (config) => {

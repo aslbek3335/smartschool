@@ -2367,9 +2367,14 @@ function getInitials(name) {
 }
 
 // ═══════════════════════════════════════════
-// CONFIG
+// CONFIG  (production: Render.com backend URL)
 // ═══════════════════════════════════════════
-const API = 'http://localhost:5005/api'; // Backend URL // Backend URL — o'zgartiring
+// API_BASE — faqat base host (uploads, video uchun)
+// window.__API_BASE__ Vercel-da inject qilinmasa, Render URL ishlatiladi
+const API_BASE = (typeof window !== 'undefined' && window.__API_BASE__)
+  ? window.__API_BASE__
+  : 'https://smartschool-9qyh.onrender.com';
+const API = API_BASE + '/api'; // barcha API so'rovlari uchun
 let token = localStorage.getItem('token') || localStorage.getItem('ss_token');
 let currentUser = JSON.parse(localStorage.getItem('user') || localStorage.getItem('ss_user') || 'null');
 let loginRole = 'student';
@@ -2438,7 +2443,7 @@ async function api(method, path, body=null, isForm=false){
     return data;
   } catch(e) {
     console.error('[API FETCH ERROR]', e);
-    toast('Server bilan bog\'lanishda xatolik! Port 5005 ning ochiqligini tekshiring.', 'error');
+    toast('Server bilan bog\'lanishda xatolik! Internetni yoki backend holatini tekshiring.', 'error');
     return { success: false, _offline: true, error: e.message };
   }
 }
@@ -2662,10 +2667,10 @@ function initDashboard(){
 function getFullAvatarUrl(url) {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
-  if (url.startsWith('/uploads/')) return 'http://localhost:5005' + url;
+  if (url.startsWith('/uploads/')) return API_BASE + url;
   if (url.includes('uploads')) {
     const filename = url.split(/uploads[\\/]/).pop();
-    return 'http://localhost:5005/uploads/' + filename;
+    return API_BASE + '/uploads/' + filename;
   }
   return url;
 }
@@ -3022,7 +3027,7 @@ async function openVideoPlayerModal(id) {
     }
     if (player) {
       player.style.display = 'block';
-      const fullUrl = rawUrl.startsWith('http') ? rawUrl : ('http://localhost:5005' + rawUrl);
+      const fullUrl = rawUrl.startsWith('http') ? rawUrl : (API_BASE + rawUrl);
       player.src = fullUrl;
       player.load();
       player.play().catch(e => console.log('Autoplay prevented:', e));
@@ -6293,7 +6298,7 @@ function animateCounter(id, target, suffix = '') {
 
 async function loadLandingStats() {
   try {
-    const res = await fetch('http://localhost:5005/api/public/landing-stats');
+    const res = await fetch(API + '/public/landing-stats');
     if (!res.ok) throw new Error('API xato');
     const data = await res.json();
     animateCounter('statStudents', data.students, '+');
