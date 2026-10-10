@@ -4,8 +4,9 @@
   "description": "Smart School Backend API",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node setup.js && node server.js",
     "dev": "nodemon server.js",
+    "setup": "node setup.js",
     "seed": "node seed.js",
     "create-admin": "node create-admin.js",
     "migrate": "node migrate.js"

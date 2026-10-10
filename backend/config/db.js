@@ -79,6 +79,34 @@ async function initDatabase() {
         created_at TIMESTAMP DEFAULT NOW(),
         UNIQUE (teacher_id, class_id)
       );
+
+      CREATE TABLE IF NOT EXISTS schedules (
+        id SERIAL PRIMARY KEY,
+        class_id INT REFERENCES classes(id) ON DELETE CASCADE,
+        teacher_id INT REFERENCES users(id) ON DELETE CASCADE,
+        subject_id INT REFERENCES subjects(id) ON DELETE CASCADE,
+        day_of_week VARCHAR(20) NOT NULL
+          CHECK (day_of_week IN ('Dushanba','Seshanba','Chorshanba','Payshanba','Juma','Shanba')),
+        lesson_number INT NOT NULL CHECK (lesson_number BETWEEN 1 AND 7),
+        start_time TIME,
+        end_time TIME,
+        room VARCHAR(50),
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE (class_id, day_of_week, lesson_number)
+      );
+
+      CREATE TABLE IF NOT EXISTS grades (
+        id SERIAL PRIMARY KEY,
+        student_id INT REFERENCES users(id) ON DELETE CASCADE,
+        teacher_id INT REFERENCES users(id) ON DELETE SET NULL,
+        subject_id INT REFERENCES subjects(id) ON DELETE CASCADE,
+        class_id INT REFERENCES classes(id) ON DELETE SET NULL,
+        score INT NOT NULL CHECK (score BETWEEN 0 AND 100),
+        grade_type VARCHAR(30) DEFAULT 'homework',
+        comment TEXT,
+        graded_at TIMESTAMP DEFAULT NOW(),
+        created_at TIMESTAMP DEFAULT NOW()
+      );
     `);
 
     // 2. Safely alter tables to add required columns
