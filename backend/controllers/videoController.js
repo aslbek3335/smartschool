@@ -39,7 +39,7 @@ exports.getVideos = async (req, res) => {
       }
     } else if (req.user?.role === 'teacher') {
       params.push(req.user.id);
-      where += ` AND (v.teacher_id = $${params.length})`;
+      where += ` AND (v.teacher_id = $${params.length} OR v.teacher_id IS NULL)`;
     }
 
     if (subject_id) { params.push(subject_id); where += ` AND v.subject_id=$${params.length}`; }
@@ -133,12 +133,14 @@ exports.createVideo = async (req, res) => {
 
     // Sinf va darajani aniqlash
     const targetClassIdVal = (target_class_id || class_id) ? parseInt(target_class_id || class_id) : null;
-    let gradeLevelVal = grade_level ? parseInt(grade_level) : null;
-    if (targetClassIdVal && !gradeLevelVal) {
+    let gradeLevelVal = null;
+    if (targetClassIdVal) {
       const cRes = await pool.query('SELECT grade_level FROM classes WHERE id = $1', [targetClassIdVal]);
       if (cRes.rows.length) {
         gradeLevelVal = cRes.rows[0].grade_level;
       }
+    } else if (grade_level) {
+      gradeLevelVal = parseInt(grade_level);
     }
 
     const result = await pool.query(

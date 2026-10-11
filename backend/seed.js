@@ -4,10 +4,12 @@ async function seedData() {
   console.log('--- Ma\'lumotlarni seed qilish boshlandi ---');
   try {
     // 1. Ensure video_lessons view
-    await pool.query(`
-      ALTER TABLE videos ALTER COLUMN video_url TYPE TEXT;
-      CREATE OR REPLACE VIEW video_lessons AS SELECT * FROM videos;
-    `);
+    try {
+      await pool.query('ALTER TABLE videos ALTER COLUMN video_url TYPE TEXT');
+    } catch (e) {}
+    try {
+      await pool.query('CREATE OR REPLACE VIEW video_lessons AS SELECT * FROM videos');
+    } catch (e) {}
 
     // 2. Sample YouTube videos
     const sampleVideos = [

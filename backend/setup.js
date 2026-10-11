@@ -535,6 +535,199 @@ async function run() {
     }
   }
 
+  // ── 7. O'QITUVCHILAR SEED ──────────────────────────────────────
+  console.log('\n📦 7-qadam: O\'qituvchilar tekshirilmoqda/seed qilinmoqda...');
+  const defaultUserPwd = '112233';
+  const userHash = await bcrypt.hash(defaultUserPwd, 10);
+
+  const sampleTeachers = [
+    { name: 'Dilfuza Rustamova', email: 'dilfuza@smartschool.uz', subject: 'Matematika' },
+    { name: 'Ergash Ilhomov',    email: 'ergash@smartschool.uz',  subject: 'Fizika' },
+    { name: 'Anvar Qodirov',     email: 'anvar@smartschool.uz',   subject: 'Tarix' },
+    { name: 'Ulugbek Olimov',    email: 'ulugbek@smartschool.uz', subject: 'Kimyo' },
+    { name: 'Fotima Asadova',    email: 'fotima@smartschool.uz',  subject: 'Ona tili' },
+    { name: 'Xursand Tolipov',   email: 'xursand@smartschool.uz', subject: 'Ingliz tili' },
+    { name: 'Qodir Tolipov',     email: 'qodir@smartschool.uz',   subject: 'Biologiya' },
+    { name: 'Chori Lolipov',     email: 'chori@smartschool.uz',   subject: 'Informatika' }
+  ];
+
+  for (const t of sampleTeachers) {
+    const ex = await pool.query('SELECT id, password_hash FROM users WHERE email = $1', [t.email]);
+    if (ex.rows.length === 0) {
+      await pool.query(`
+        INSERT INTO users (full_name, email, username, password_hash, password, plain_password, role, subject, is_active)
+        VALUES ($1, $2, $2, $3, $3, $4, 'teacher', $5, TRUE)
+      `, [t.name, t.email, userHash, defaultUserPwd, t.subject]);
+      console.log(`  + O'qituvchi yaratildi: ${t.name} (${t.email})`);
+    } else {
+      await pool.query(`
+        UPDATE users SET subject = COALESCE(subject, $1), is_active = TRUE WHERE id = $2
+      `, [t.subject, ex.rows[0].id]);
+    }
+  }
+
+  // ── 8. O'QUVCHILAR SEED ────────────────────────────────────────
+  console.log('\n📦 8-qadam: O\'quvchilar tekshirilmoqda/seed qilinmoqda...');
+  const sampleStudents = [
+    { name: 'Asad Bekov',         email: 'asad@smartschool.uz',     class_name: '1-sinf' },
+    { name: 'Azizbek Karimov',     email: 'azizbek@smartschool.uz',   class_name: '2-sinf' },
+    { name: 'Sharofat Ismoilova', email: 'sharofat4@smartschool.uz', class_name: '4-sinf' },
+    { name: 'Temur Asadov',       email: 'temur@smartschool.uz',    class_name: '5-sinf' },
+    { name: 'Shahzod Komilov',    email: 'shahzod7@smartschool.uz', class_name: '7-sinf' },
+    { name: 'Quvonch Gulomov',    email: 'quvonch9@smartschool.uz', class_name: '9-sinf' },
+    { name: 'Fotima Dilshodova',  email: 'fotima11@smartschool.uz', class_name: '11-sinf' }
+  ];
+
+  for (const s of sampleStudents) {
+    const ex = await pool.query('SELECT id FROM users WHERE email = $1', [s.email]);
+    if (ex.rows.length === 0) {
+      await pool.query(`
+        INSERT INTO users (full_name, email, username, password_hash, password, plain_password, role, class_name, is_active)
+        VALUES ($1, $2, $2, $3, $3, $4, 'student', $5, TRUE)
+      `, [s.name, s.email, userHash, defaultUserPwd, s.class_name]);
+      console.log(`  + O'quvchi yaratildi: ${s.name} (${s.email})`);
+    } else {
+      await pool.query(`
+        UPDATE users SET class_name = COALESCE(class_name, $1), is_active = TRUE WHERE id = $2
+      `, [s.class_name, ex.rows[0].id]);
+    }
+  }
+
+  // O'quvchilarni tegishli class_id ga bog'lash
+  await pool.query(`
+    UPDATE users u
+    SET class_id = c.id
+    FROM classes c
+    WHERE u.role = 'student'
+      AND (
+        LOWER(u.class_name) = LOWER(c.name)
+        OR c.grade_level = NULLIF(REGEXP_REPLACE(u.class_name, '[^0-9]', '', 'g'), '')::int
+      );
+  `);
+
+  // ── 9. FAN VA SINFLAR TAQSIMOTI ────────────────────────────────
+  console.log('\n📦 9-qadam: Sinf va o\'qituvchilar taqsimoti...');
+  const { rows: allTeachers } = await pool.query("SELECT id, full_name, email, subject FROM users WHERE role = 'teacher'");
+  const { rows: allClasses }  = await pool.query('SELECT id, name, grade_level FROM classes ORDER BY grade_level ASC');
+  const { rows: allSubjects } = await pool.query('SELECT id, name FROM subjects');
+
+  const getSubId = (name) => allSubjects.find(s => s.name.toLowerCase().includes(name.toLowerCase()))?.id;
+  const getTeacher = (email) => allTeachers.find(t => t.email === email);
+
+  // Sinf rahbarlarini tayinlash
+  const leaderMap = {
+    '1-sinf': 'fotima@smartschool.uz',
+    '2-sinf': 'fotima@smartschool.uz',
+    '4-sinf': 'fotima@smartschool.uz',
+    '5-sinf': 'dilfuza@smartschool.uz',
+    '7-sinf': 'ergash@smartschool.uz',
+    '9-sinf': 'anvar@smartschool.uz',
+    '11-sinf': 'ulugbek@smartschool.uz'
+  };
+
+  for (const [clsName, tEmail] of Object.entries(leaderMap)) {
+    const t = getTeacher(tEmail);
+    if (t) {
+      await pool.query(`
+        UPDATE classes 
+        SET class_leader_id = $1, class_teacher_id = $1
+        WHERE LOWER(name) = LOWER($2)
+      `, [t.id, clsName]);
+    }
+  }
+
+  // O'qituvchilarni sinf va fanlarga biriktirish
+  for (const t of allTeachers) {
+    const subId = getSubId(t.subject || '');
+    if (!subId) continue;
+
+    // Har bir o'qituvchini 3-4 ta mos sinfga biriktirish
+    for (const c of allClasses) {
+      if (c.grade_level >= 5 || t.subject === 'Matematika' || t.subject === 'Ona tili' || t.subject === 'Ingliz tili') {
+        await pool.query(`
+          INSERT INTO teacher_classes (teacher_id, class_id, subject_id)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (teacher_id, class_id) DO NOTHING;
+        `, [t.id, c.id, subId]);
+
+        await pool.query(`
+          INSERT INTO class_subject_teachers (class_id, subject_id, teacher_id)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (class_id, subject_id) DO UPDATE SET teacher_id = EXCLUDED.teacher_id;
+        `, [c.id, subId, t.id]);
+      }
+    }
+  }
+  console.log('  ✅ Dars taqsimotlari va sinf rahbarlari o\'rnatildi');
+
+  // ── 10. DARS JADVALLARI ────────────────────────────────────────
+  console.log('\n📦 10-qadam: Dars jadvallari seed qilinmoqda...');
+  const { rows: [{ count: schedCount }] } = await pool.query('SELECT COUNT(*) FROM schedules');
+  if (parseInt(schedCount) === 0) {
+    const days = ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma'];
+    const timeSlots = [
+      { num: 1, start: '08:00', end: '08:45' },
+      { num: 2, start: '08:55', end: '09:40' },
+      { num: 3, start: '09:50', end: '10:35' },
+      { num: 4, start: '10:45', end: '11:30' }
+    ];
+
+    for (const c of allClasses.slice(0, 7)) { // 1-7 sinflar uchun namunaviy jadval
+      for (let di = 0; di < days.length; di++) {
+        const day = days[di];
+        for (let li = 0; li < timeSlots.length; li++) {
+          const slot = timeSlots[li];
+          const tIdx = (di + li + c.id) % allTeachers.length;
+          const t = allTeachers[tIdx];
+          const subId = getSubId(t.subject || '') || allSubjects[0].id;
+
+          await pool.query(`
+            INSERT INTO schedules (class_id, teacher_id, subject_id, day_of_week, lesson_number, start_time, end_time, room)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (class_id, day_of_week, lesson_number) DO NOTHING;
+          `, [c.id, t.id, subId, day, slot.num, slot.start, slot.end, `${c.grade_level * 10 + li + 1}-xona`]);
+        }
+      }
+    }
+    console.log('  ✅ Namunaviy dars jadvallari yaratildi');
+  } else {
+    console.log(`  ℹ️  Dars jadvallari mavjud (${schedCount} ta)`);
+  }
+
+  // ── 11. BAHOLAR VA VAZIFALAR ───────────────────────────────────
+  console.log('\n📦 11-qadam: Namunaviy baholar va vazifalar...');
+  const { rows: [{ count: gradeCount }] } = await pool.query('SELECT COUNT(*) FROM grades');
+  if (parseInt(gradeCount) === 0) {
+    const { rows: currentStudents } = await pool.query("SELECT id, class_id FROM users WHERE role = 'student'");
+    for (const st of currentStudents) {
+      if (!allTeachers.length) break;
+      const t = allTeachers[0];
+      const subId = getSubId(t.subject || '') || allSubjects[0].id;
+      await pool.query(`
+        INSERT INTO grades (student_id, teacher_id, subject_id, class_id, score, grade_type, comment)
+        VALUES 
+          ($1, $2, $3, $4, 95, 'homework', 'Vazifa a\'lo darajada bajarildi'),
+          ($1, $2, $3, $4, 88, 'quiz', 'Mavzu bo\'yicha test sinovi')
+      `, [st.id, t.id, subId, st.class_id]);
+    }
+    console.log('  ✅ Namunaviy baholar qo\'shildi');
+  } else {
+    console.log(`  ℹ️  Baholar allaqachon mavjud (${gradeCount} ta)`);
+  }
+
+  const { rows: [{ count: taskCount }] } = await pool.query('SELECT COUNT(*) FROM tasks');
+  if (parseInt(taskCount) === 0 && allTeachers.length > 0) {
+    const t = allTeachers[0];
+    const subId = getSubId(t.subject || '') || allSubjects[0].id;
+    await pool.query(`
+      INSERT INTO tasks (title, description, subject_id, teacher_id, class_name, due_date)
+      VALUES 
+        ('1-Mavzu bo''yicha amaliy mashqlar', 'Darslikdagi 15-20 misollarni daftarga yozib yechish', $1, $2, '5-sinf', CURRENT_DATE + INTERVAL '3 days'),
+        ('Mustaqil mutolaa va konspekt', 'Mavzuni diqqat bilan o''qib, qisqacha reja tuzish', $1, $2, '7-sinf', CURRENT_DATE + INTERVAL '5 days')
+    `, [subId, t.id]);
+    console.log('  ✅ Namunaviy vazifalar qo\'shildi');
+  }
+
   // ── YAKUNIY HISOBOT ───────────────────────────────────────────
   const counts = await Promise.all([
     pool.query('SELECT COUNT(*) FROM users'),
